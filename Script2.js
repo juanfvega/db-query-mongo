@@ -141,15 +141,78 @@ db.movies.aggregate([
         $sort:{avg:-1}
     }
 ])
+
+db.comments.find({})
+db.movies.find({})
 /*
 8. Título, año y cantidad de comentarios de las 10 películas con más comentarios.
 */
+db.comments.aggregate([
 
+    {
+        $lookup:{
+            from:"movies",
+            localField:"movie_id",           
+            foreignField:"_id",
+            as:"commentsOfMovies"
+        },
+        
+    },
+    {
+        $unwind:"$commentsOfMovies"
+    },
+    {
+        $group:{
+          _id:"$commentsOfMovies.title",
+          year:{"$first":"$commentsOfMovies.year"},
+          count:{$sum:1}
+        }
+    },
+    {
+        $sort:{"count":-1}
+    },
+    {
+        $limit:10
+    }
 
-/*9. Crear una vista con los 5 géneros con mayor cantidad de comentarios, junto con la
-cantidad de comentarios.
+])
+
+/*9. Crear una vista con los 5 géneros con mayor cantidad
+ de comentarios, junto con la cantidad de comentarios.
 */
 
+db.createView("top5Genres","comments",[
+
+    {
+        $lookup:{
+            from:"movies",
+            localField:"movie_id",           
+            foreignField:"_id",
+            as:"commentsOfMovies"
+        },
+        
+    },
+    {
+        $unwind:"$commentsOfMovies"
+    },
+    {
+        $unwind:"$commentsOfMovies.genres"
+    },
+    {
+        $group:{
+          _id:"$commentsOfMovies.genres",
+          count:{$sum:1}
+        }
+    },
+    {
+        $sort:{"count":-1}
+    },
+    {
+        $limit:5
+    }
+])
+
+db.top5Genres.find({})
 
 /*10. Listar los actores (cast) que trabajaron en 2 o más películas dirigidas por "Jules Bass".
 Devolver el nombre de estos actores junto con la lista de películas (solo título y año)
